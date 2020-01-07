@@ -1,6 +1,7 @@
 const express = require('express');
 const router = require('./router');
 
+
 const app = express();
 
 app.use(express.static("public"));
@@ -12,6 +13,4 @@ app.set('view engine', 'ejs');
 
 app.use('/', router);
 
-
-
-app.listen(process.env.PORT);
+module.exports = app;
