@@ -1,4 +1,5 @@
-const validator = require('validator'),
+const usersCollection = require('../server').db().collection('users'),
+      validator = require('validator'),
       bcrypt = require('bcryptjs');
 
 let User = function (data) {
@@ -7,6 +8,14 @@ let User = function (data) {
 };
 
 User.prototype.cleanUp = function () {
+  if (typeof(this.data.firstname) != "string") {
+    this.data.firstname = ""
+  };
+
+  if (typeof(this.data.surname) != "string") {
+    this.data.surname = ""
+  };
+
   if (typeof(this.data.username) != "string") {
     this.data.username = ""
   };
@@ -19,8 +28,8 @@ User.prototype.cleanUp = function () {
 
   // Remove unwanted properties
   this.data = {
-    firstname: this.data.firstname.trim().toLowerCase(),
-    surname: this.data.surname.trim().toLowerCase(),
+    firstname: this.data.firstname.trim(),
+    surname: this.data.surname.trim(),
     username: this.data.username.toLowerCase(),
     email: this.data.email.trim().toLowerCase(),
     password: this.data.password,
@@ -85,9 +94,41 @@ User.prototype.validate = function() {
 
 
 User.prototype.register = function() {
-  this.cleanUp();
-  this.validate();
+  return new Promise(async (resolve, reject) => {
+    // Step #1: Validate user data
+    this.cleanUp();
+    await this.validate();
+  
+    // Step #2: Only if there are no validation errors
+    // then save user data into a database
+    if (!this.errors.length) {
+      // hash user password
+      let salt = bcrypt.genSaltSync(10);
+      this.data.password = bcrypt.hashSync(this.data.password, salt);
+      this.data.passwordConfirm = this.data.password;
+      await usersCollection.insertOne(this.data);
+      resolve();
+    } else {
+      reject(this.errors);
+    };
+  });
+};
 
-}
+User.prototype.login = function() {
+  return new Promise((resolve, reject) => {
+    this.cleanUp();
+    usersCollection.findOne({username: this.data.username})
+      .then((loggedInUser) => {
+        if (loggedInUser && bcrypt.compareSync(this.data.password, loggedInUser.password)) {
+          this.data = loggedInUser;
+          resolve("Logged in");
+        } else {
+          reject("Invalid username/password");
+        };
+      }).catch(() => {
+        reject("Please try again later")
+      });
+  });
+};
 
 module.exports = User;
