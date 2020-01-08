@@ -1,10 +1,13 @@
 const usersCollection = require('../server').db().collection('users'),
       validator = require('validator'),
-      bcrypt = require('bcryptjs');
+      bcrypt = require('bcryptjs'),
+      md5 = require('md5');
 
-let User = function (data) {
+let User = function(data, getAvatar) {
   this.data = data;
   this.errors = [];
+  if (getAvatar == undefined) {getAvatar = false};
+  if (getAvatar) {this.getAvatar()};
 };
 
 User.prototype.cleanUp = function () {
@@ -76,21 +79,20 @@ User.prototype.validate = function() {
       this.errors.push("Password length cannot exceed 30 characters")
     };
   
-    // // Only if username is valid then check to see if it has been taken
-    // if (this.data.username.length > 2 && this.data.username.length < 31 && validator.isAlphanumeric(this.data.username))  {
-    //   let usernameExists = await usersCollection.findOne({username: this.data.username});
-    //   if (usernameExists) {this.errors.push('That username is taken')}
-    // };
+    // Only if username is valid then check to see if it has been taken
+    if (this.data.username.length > 2 && this.data.username.length < 31 && validator.isAlphanumeric(this.data.username))  {
+      let usernameExists = await usersCollection.findOne({username: this.data.username});
+      if (usernameExists) {this.errors.push('That username is taken')}
+    };
   
-    // // Only if email is valid then check to see if it has been taken
-    // if (validator.isEmail(this.data.email))  {
-    //   let emailExists = await usersCollection.findOne({email: this.data.email});
-    //   if (emailExists) {this.errors.push('That email address is already being used')}
-    // };
+    // Only if email is valid then check to see if it has been taken
+    if (validator.isEmail(this.data.email))  {
+      let emailExists = await usersCollection.findOne({email: this.data.email});
+      if (emailExists) {this.errors.push('That email address is already being used')}
+    };
     resolve();
   });
 };
-
 
 
 User.prototype.register = function() {
@@ -107,6 +109,7 @@ User.prototype.register = function() {
       this.data.password = bcrypt.hashSync(this.data.password, salt);
       this.data.passwordConfirm = this.data.password;
       await usersCollection.insertOne(this.data);
+      this.getAvatar();
       resolve();
     } else {
       reject(this.errors);
@@ -121,6 +124,7 @@ User.prototype.login = function() {
       .then((loggedInUser) => {
         if (loggedInUser && bcrypt.compareSync(this.data.password, loggedInUser.password)) {
           this.data = loggedInUser;
+          this.getAvatar();
           resolve("Logged in");
         } else {
           reject("Invalid username/password");
@@ -128,6 +132,50 @@ User.prototype.login = function() {
       }).catch(() => {
         reject("Please try again later")
       });
+  });
+};
+
+User.prototype.getAvatar = function() {
+  this.avatar = `https://secure.gravatar.com/avatar/${md5(this.data.email)}?s=128`
+};
+
+User.findByUsername = function(username) {
+  return new Promise (function(resolve, reject) {
+    if (typeof(username) != 'string') {
+      reject()
+      return
+    };
+    usersCollection.findOne({username: username})
+    .then(function(userDocument) {
+      if (userDocument) {
+        userDocument = new User (userDocument, true)
+        userDocument = {
+          _id: userDocument.data._id,
+          username: userDocument.data.username,
+          avatar: userDocument.avatar
+        }
+          resolve(userDocument)
+      } else {
+        reject();
+      };
+    }).catch(function() {
+      reject();
+    });
+  });
+};
+
+User.doesEmailExist = function(email) {
+  return new Promise(async function(resolve, reject) {
+    if (typeof(email) !='string') {
+      resolve(false);
+      return
+    }
+    let user = await usersCollection.findOne({email: email});
+    if (user) {
+      resolve(true);
+    } else {
+      resolve(false);
+    };
   });
 };
 
