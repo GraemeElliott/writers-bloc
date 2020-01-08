@@ -12,11 +12,7 @@
   "dependencies": {
     "@babel/core": "^7.7.7",
     "@babel/preset-env": "^7.7.7",
-<<<<<<< HEAD
     "axios": "^0.19.1",
-=======
-    "axios": "^0.19.0",
->>>>>>> ca80d3371581fb2e37beb605f5c9e888548891bf
     "babel-loader": "^8.0.6",
     "bcryptjs": "^2.4.3",
     "connect-flash": "^0.1.1",
