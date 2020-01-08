@@ -1,4 +1,4 @@
-const usersCollection = require('../server').db().collection('users'),
+const usersCollection = require('../server.js').db().collection('users'),
       validator = require('validator'),
       bcrypt = require('bcryptjs'),
       md5 = require('md5');
@@ -11,14 +11,6 @@ let User = function(data, getAvatar) {
 };
 
 User.prototype.cleanUp = function () {
-  if (typeof(this.data.firstname) != "string") {
-    this.data.firstname = ""
-  };
-
-  if (typeof(this.data.surname) != "string") {
-    this.data.surname = ""
-  };
-
   if (typeof(this.data.username) != "string") {
     this.data.username = ""
   };
@@ -31,8 +23,6 @@ User.prototype.cleanUp = function () {
 
   // Remove unwanted properties
   this.data = {
-    firstname: this.data.firstname.trim(),
-    surname: this.data.surname.trim(),
     username: this.data.username.toLowerCase(),
     email: this.data.email.trim().toLowerCase(),
     password: this.data.password,
@@ -42,15 +32,6 @@ User.prototype.cleanUp = function () {
 
 User.prototype.validate = function() {
   return new Promise(async (resolve, reject) => {
-
-    if (this.data.firstname == "") {
-      this.errors.push("You must provide a first name")
-    };
-
-    if (this.data.surname == "") {
-      this.errors.push("You must provide a surname")
-    };
-
     if (this.data.username == "") {
       this.errors.push("You must provide a username")
     };
@@ -92,8 +73,7 @@ User.prototype.validate = function() {
     };
     resolve();
   });
-};
-
+}
 
 User.prototype.register = function() {
   return new Promise(async (resolve, reject) => {

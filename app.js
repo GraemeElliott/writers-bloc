@@ -3,11 +3,10 @@ const session = require('express-session');
 const MongoStore = require('connect-mongo')(session);
 const flash = require('connect-flash');
 const markdown = require('marked');
-
 const app = express();
 
 let sessionOptions = session({
-  secret: 'Secret Session',
+  secret: 'The Secret Session Option',
   store: new MongoStore({client: require('./server'), dbName: 'writersbloc'}),
   resave: false,
   saveUninitialized: false,
